@@ -1,4 +1,5 @@
 import secrets
+import ecies
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
@@ -203,3 +204,34 @@ def decrypt_data(ciphertext, secret_key):
 
     # Return the unpadded data
     return unpadded_data
+
+
+def encrypt_data_with_certificate(data, certificate):
+    # Get the public key from the certificate
+    certificate_public_key = x509.load_pem_x509_certificate(certificate).public_key()
+
+    # Adapt public key format
+    public_key = certificate_public_key.public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=serialization.PublicFormat.UncompressedPoint
+    )
+
+    # Encrypt the data with ECIES using the public key
+    ciphertext = ecies.encrypt(public_key, data)
+
+    # Return the ciphertext
+    return ciphertext
+
+
+def decrypt_data_with_private_key(ciphertext, serialized_private_key):
+    # Load private key
+    loaded_private_key = _load_private_key(serialized_private_key)
+
+    # Get the private key from the certificate
+    private_key = loaded_private_key.private_numbers().private_value.to_bytes(32, byteorder='big')
+
+    # Decrypt the ciphertext with ECIES using the private key
+    decrypted_data = ecies.decrypt(private_key, ciphertext)
+
+    # Return the decrypted data
+    return decrypted_data

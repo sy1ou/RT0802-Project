@@ -17,9 +17,14 @@ def message_relay(server, src, dest, message):
             break
 
 def system_request(server, src_client_name, data):
-    request, argument = data.split(';', 2)
     # Default vars
     response = ''
+
+    # Decrypt the ciphertext with ECIES using the private key
+    decrypted_data = decrypt_data_with_private_key(bytes.fromhex(data), server.server_key.encode()).decode()
+
+    # Split request verb to argument
+    request, argument = decrypted_data.split(';', 2)
 
     print(f"Request: {request}")
     if argument:
@@ -44,7 +49,13 @@ def system_request(server, src_client_name, data):
 
     # Send response to the client
     if response:
-        message_relay(server, 'server', src_client_name, response)
+        # Generate signature
+        signature = generate_data_signature(server.server_key.encode(), response.encode()).hex()
+
+        # Format reponse with signature
+        data = f"{response}!{signature}"
+
+        message_relay(server, 'server', src_client_name, data)
 
 if __name__ == '__main__':
     # Get configuration file from argument

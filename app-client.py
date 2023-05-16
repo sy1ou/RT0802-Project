@@ -184,9 +184,19 @@ def forwarder(instance):
             src, dest, raw_message = data.split(':', 2)
 
             if src == 'server':
+                # Extract signature
+                data, signature = raw_message.split('!', 1)
+
+                # Exit if error occurs with the signature verification
+                if not verify_data_signature(data.encode(), bytes.fromhex(signature), instance.server_cert.encode()):
+                    print("The response is not signed by the server's ceritifcate.")
+                    return False
+                else:
+                    print("Server response verified.")
+
                 # Handle system exchange process
                 try:
-                    system_exchange(instance, raw_message)
+                    system_exchange(instance, data)
                 except Exception as e:
                     print(f"System exchange error: {e}")
             else:
@@ -233,7 +243,11 @@ def user_interface(instance):
                     case '1':
                         request = 'GET_CLIENT_NAMES'
 
-                data = f"{request};{argument}"
+                # Prepare data to encrypt
+                cleartext = f"{request};{argument}"
+
+                # Encrypt the data with ECIES using the public key
+                data = encrypt_data_with_certificate(cleartext.encode(), instance.server_cert.encode()).hex()
 
             # Action when sending to any other client
             else:
@@ -335,8 +349,14 @@ if __name__ == '__main__':
         common_name = instance.client_name
         csr = create_csr(private_key, public_key, common_name)
 
+        # Prepare data to encrypt
+        data = f"SIGN_CERTIFICATE;{csr.decode()}"
+
+        # Encrypt the data with ECIES using the public key
+        ciphertext = encrypt_data_with_certificate(data.encode(), instance.server_cert.encode())
+
         # Format data payload
-        data = f"{instance.client_name}:server:SIGN_CERTIFICATE;{csr.decode()}"
+        data = f"{instance.client_name}:server:{ciphertext.hex()}"
 
         # Send CSR to CA
         instance.send_message(data)
