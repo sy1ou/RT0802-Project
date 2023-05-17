@@ -2,6 +2,10 @@
 Secure communication lab via PKI and Relay
 
 ## Usage
+In this section you will find the different steps to use this project.
+
+### Python requirements
+The project requires two Python libraries, namely `eciespy` version 0.3 and `cryptography` version 40.0. These libraries likely serve specific functionalities or dependencies within the project. The provided `Pipfile` simplifies the installation and management of these dependencies, ensuring a consistent and reproducible environment for the project's usage.
 
 ### Makefile
 Running the Makefile will generate the CA certificate and key files (`pki/ca.crt` and `pki/ca.key`), and then generate the server configuration JSON file (`config/server_config.json`) and client configuration JSON files (`config/client1.json`, `config/client2.json`, etc.) with the appropriate server address, port, and CA configuration.
